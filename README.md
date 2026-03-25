@@ -63,18 +63,10 @@ The full MySQL script is available at:
 The app also includes:
 
 - [schema.sql](/home/shanelperera/car-sales-platform/src/main/resources/schema.sql)
-- [data.sql](/home/shanelperera/car-sales-platform/src/main/resources/data.sql)
 
 So when the app starts, it can create the tables automatically in `redrive_db` if MySQL credentials are correct.
-
-## Default Demo Accounts
-
-- Super Admin
-  - email: `admin@redrive.com`
-  - password: `12345678`
-- Normal Admin
-  - email: `moderator@redrive.com`
-  - password: `12345678`
+The backend also creates one default super admin account in application code on first startup.
+No sample cars, buyers, sellers, or transactions are inserted.
 
 ## MySQL Configuration
 
@@ -134,7 +126,21 @@ If Maven is not installed on the machine yet, install Maven first and then run t
 
 ## Important API Usage
 
-First login using:
+The backend creates the initial super admin account automatically on first startup.
+
+Default bootstrap admin:
+
+- email: `admin@redrive.com`
+- password: `12345678`
+
+You can override those values with environment variables before starting the app:
+
+```bash
+export APP_BOOTSTRAP_ADMIN_EMAIL=your-admin@example.com
+export APP_BOOTSTRAP_ADMIN_PASSWORD=your-secure-password
+```
+
+Then login using:
 
 `POST /api/admin/auth/login`
 
@@ -219,6 +225,7 @@ curl -X PUT http://localhost:8080/api/admin/users/3/ban \
 
 - Passwords are stored as plain text only to keep the project simple for a student demo.
 - This is okay for an academic project, but not for a real production system.
+- The backend creates the initial super admin account on startup when no admin account exists.
 - The schema is based on the client-provided SQL, with small additions needed to support admin moderation properly:
   - `users.account_status`
   - `cars.moderation_note`
