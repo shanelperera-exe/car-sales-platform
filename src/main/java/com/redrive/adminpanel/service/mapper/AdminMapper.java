@@ -39,7 +39,7 @@ public final class AdminMapper {
         );
     }
 
-    public static CarListingResponse toCarListingResponse(Car car) {
+    public static CarListingResponse toCarListingResponse(Car car, String imageUrl) {
         return new CarListingResponse(
                 car.getId(),
                 car.getSeller().getId(),
@@ -52,6 +52,7 @@ public final class AdminMapper {
                 car.getFuelType(),
                 car.getPrice(),
                 car.getLocation(),
+                imageUrl,
                 car.getStatus().name(),
                 car.getModerationNote(),
                 car.getCreatedAt()

@@ -1,0 +1,13 @@
+USE redrive_db;
+
+SET FOREIGN_KEY_CHECKS = 0;
+
+TRUNCATE TABLE admin_logs;
+TRUNCATE TABLE messages;
+TRUNCATE TABLE transactions;
+TRUNCATE TABLE car_images;
+TRUNCATE TABLE car_features;
+TRUNCATE TABLE cars;
+TRUNCATE TABLE users;
+
+SET FOREIGN_KEY_CHECKS = 1;

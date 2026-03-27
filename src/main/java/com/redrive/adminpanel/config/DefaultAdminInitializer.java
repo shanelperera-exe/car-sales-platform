@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,11 +21,14 @@ public class DefaultAdminInitializer implements ApplicationRunner {
 
     private final UserRepository userRepository;
     private final BootstrapAdminProperties bootstrapAdminProperties;
+    private final PasswordEncoder passwordEncoder;
 
     public DefaultAdminInitializer(UserRepository userRepository,
-                                   BootstrapAdminProperties bootstrapAdminProperties) {
+                                   BootstrapAdminProperties bootstrapAdminProperties,
+                                   PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.bootstrapAdminProperties = bootstrapAdminProperties;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -47,15 +51,22 @@ public class DefaultAdminInitializer implements ApplicationRunner {
             );
         }
 
+        String bootstrapPassword = bootstrapAdminProperties.getPassword().trim();
         User admin = new User();
         admin.setFirstName(bootstrapAdminProperties.getFirstName().trim());
         admin.setLastName(bootstrapAdminProperties.getLastName().trim());
         admin.setEmail(normalizedEmail);
-        admin.setPassword(bootstrapAdminProperties.getPassword());
+        admin.setPassword(isBcryptHash(bootstrapPassword)
+                ? bootstrapPassword
+                : passwordEncoder.encode(bootstrapPassword));
         admin.setRole(Role.SUPER_ADMIN);
         admin.setAccountStatus(UserStatus.ACTIVE);
 
         userRepository.save(admin);
         logger.info("Created default super admin account for {}", normalizedEmail);
+    }
+
+    private boolean isBcryptHash(String value) {
+        return value != null && value.length() == 60 && value.startsWith("$2");
     }
 }

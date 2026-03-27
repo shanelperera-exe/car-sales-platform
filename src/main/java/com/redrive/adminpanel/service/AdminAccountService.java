@@ -1,6 +1,7 @@
 package com.redrive.adminpanel.service;
 
 import com.redrive.adminpanel.dto.AdminAccountResponse;
+import com.redrive.adminpanel.dto.AdminProfileUpdateRequest;
 import com.redrive.adminpanel.dto.AdminRegistrationRequest;
 import com.redrive.adminpanel.entity.User;
 import com.redrive.adminpanel.entity.enums.Role;
@@ -10,6 +11,7 @@ import com.redrive.adminpanel.repository.AdminLogRepository;
 import com.redrive.adminpanel.repository.UserRepository;
 import com.redrive.adminpanel.service.admin.Admin;
 import com.redrive.adminpanel.service.mapper.AdminMapper;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,8 +20,13 @@ import java.util.List;
 @Service
 public class AdminAccountService extends BaseAdminService {
 
-    public AdminAccountService(UserRepository userRepository, AdminLogRepository adminLogRepository) {
+    private final PasswordEncoder passwordEncoder;
+
+    public AdminAccountService(UserRepository userRepository,
+                               AdminLogRepository adminLogRepository,
+                               PasswordEncoder passwordEncoder) {
         super(userRepository, adminLogRepository);
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Transactional
@@ -37,7 +44,7 @@ public class AdminAccountService extends BaseAdminService {
         admin.setFirstName(request.firstName().trim());
         admin.setLastName(request.lastName().trim());
         admin.setEmail(request.email().trim().toLowerCase());
-        admin.setPassword(request.password());
+        admin.setPassword(passwordEncoder.encode(request.password()));
         admin.setPhone(cleanText(request.phone()));
         admin.setLocation(cleanText(request.location()));
         admin.setRole(parseAdminRole(request.role()));
@@ -61,6 +68,40 @@ public class AdminAccountService extends BaseAdminService {
 
         saveLog(adminActor.getUser(), "VIEW_ADMINS", "ADMIN ACCOUNTS", "SUCCESS", startTime);
         return response;
+    }
+
+    @Transactional
+    public AdminAccountResponse updateOwnAccount(Long adminId, AdminProfileUpdateRequest request) {
+        long startTime = System.currentTimeMillis();
+        Admin adminActor = getAdminActor(adminId);
+        User adminUser = adminActor.getUser();
+
+        String normalizedEmail = request.email().trim().toLowerCase();
+        boolean emailChanged = !adminUser.getEmail().equalsIgnoreCase(normalizedEmail);
+        if (emailChanged && userRepository.existsByEmailIgnoreCase(normalizedEmail)) {
+            saveLog(adminUser, "UPDATE_OWN_ACCOUNT", "Admin ID: " + adminUser.getId(), "FAILED", startTime);
+            throw new BadRequestException("An account already exists with this email.");
+        }
+
+        String password = request.password();
+        if (password != null && !password.isBlank() && password.trim().length() < 8) {
+            saveLog(adminUser, "UPDATE_OWN_ACCOUNT", "Admin ID: " + adminUser.getId(), "FAILED", startTime);
+            throw new BadRequestException("Password must be at least 8 characters.");
+        }
+
+        adminUser.setFirstName(request.firstName().trim());
+        adminUser.setLastName(request.lastName().trim());
+        adminUser.setEmail(normalizedEmail);
+        adminUser.setPhone(cleanText(request.phone()));
+        adminUser.setLocation(cleanText(request.location()));
+
+        if (password != null && !password.isBlank()) {
+            adminUser.setPassword(passwordEncoder.encode(password.trim()));
+        }
+
+        User updated = userRepository.save(adminUser);
+        saveLog(updated, "UPDATE_OWN_ACCOUNT", "Admin ID: " + updated.getId(), "SUCCESS", startTime);
+        return AdminMapper.toAdminAccountResponse(updated);
     }
 
     private Role parseAdminRole(String roleValue) {
