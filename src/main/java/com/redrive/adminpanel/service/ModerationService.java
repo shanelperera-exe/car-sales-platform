@@ -12,6 +12,7 @@ import com.redrive.adminpanel.entity.enums.UserStatus;
 import com.redrive.adminpanel.exception.BadRequestException;
 import com.redrive.adminpanel.exception.ResourceNotFoundException;
 import com.redrive.adminpanel.repository.AdminLogRepository;
+import com.redrive.adminpanel.repository.CarImageRepository;
 import com.redrive.adminpanel.repository.CarRepository;
 import com.redrive.adminpanel.repository.UserRepository;
 import com.redrive.adminpanel.service.admin.Admin;
@@ -19,19 +20,24 @@ import com.redrive.adminpanel.service.mapper.AdminMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
 @Service
 public class ModerationService extends BaseAdminService {
 
     private final CarRepository carRepository;
+    private final CarImageRepository carImageRepository;
 
     public ModerationService(UserRepository userRepository,
                              AdminLogRepository adminLogRepository,
-                             CarRepository carRepository) {
+                             CarRepository carRepository,
+                             CarImageRepository carImageRepository) {
         super(userRepository, adminLogRepository);
         this.carRepository = carRepository;
+        this.carImageRepository = carImageRepository;
     }
 
     @Transactional
@@ -39,9 +45,11 @@ public class ModerationService extends BaseAdminService {
         long startTime = System.currentTimeMillis();
         Admin adminActor = getAdminActor(adminId);
 
-        List<CarListingResponse> listings = carRepository.findByStatusOrderByCreatedAtDesc(CarStatus.PENDING_APPROVAL)
-                .stream()
-                .map(AdminMapper::toCarListingResponse)
+        List<Car> cars = carRepository.findByStatusOrderByCreatedAtDesc(CarStatus.PENDING_APPROVAL);
+        Map<Long, String> imageUrls = resolvePrimaryImageUrls(cars);
+
+        List<CarListingResponse> listings = cars.stream()
+                .map(car -> AdminMapper.toCarListingResponse(car, imageUrls.get(car.getId())))
                 .toList();
 
         saveLog(adminActor.getUser(), "VIEW_PENDING_LISTINGS", "PENDING APPROVAL QUEUE", "SUCCESS", startTime);
@@ -53,12 +61,13 @@ public class ModerationService extends BaseAdminService {
         long startTime = System.currentTimeMillis();
         Admin adminActor = getAdminActor(adminId);
 
-        Stream<Car> stream = status == null
-                ? carRepository.findAllByOrderByCreatedAtDesc().stream()
-                : carRepository.findByStatusOrderByCreatedAtDesc(status).stream();
+        List<Car> cars = status == null
+                ? carRepository.findAllByOrderByCreatedAtDesc()
+                : carRepository.findByStatusOrderByCreatedAtDesc(status);
+        Map<Long, String> imageUrls = resolvePrimaryImageUrls(cars);
 
-        List<CarListingResponse> response = stream
-                .map(AdminMapper::toCarListingResponse)
+        List<CarListingResponse> response = cars.stream()
+                .map(car -> AdminMapper.toCarListingResponse(car, imageUrls.get(car.getId())))
                 .toList();
 
         saveLog(adminActor.getUser(), "VIEW_LISTINGS", status == null ? "ALL LISTINGS" : status.name(), "SUCCESS", startTime);
@@ -81,7 +90,9 @@ public class ModerationService extends BaseAdminService {
 
         Car savedCar = carRepository.save(car);
         saveLog(adminActor.getUser(), "APPROVE_LISTING", "Car ID: " + carId, "SUCCESS", startTime);
-        return AdminMapper.toCarListingResponse(savedCar);
+        String imageUrl = carImageRepository.findPrimaryImageUrlByCarId(savedCar.getId())
+                .orElse(null);
+        return AdminMapper.toCarListingResponse(savedCar, imageUrl);
     }
 
     @Transactional
@@ -100,7 +111,9 @@ public class ModerationService extends BaseAdminService {
 
         Car savedCar = carRepository.save(car);
         saveLog(adminActor.getUser(), "REJECT_LISTING", "Car ID: " + carId, "SUCCESS", startTime);
-        return AdminMapper.toCarListingResponse(savedCar);
+        String imageUrl = carImageRepository.findPrimaryImageUrlByCarId(savedCar.getId())
+                .orElse(null);
+        return AdminMapper.toCarListingResponse(savedCar, imageUrl);
     }
 
     @Transactional
@@ -192,5 +205,24 @@ public class ModerationService extends BaseAdminService {
             return null;
         }
         return value.trim();
+    }
+
+    private Map<Long, String> resolvePrimaryImageUrls(List<Car> cars) {
+        if (cars.isEmpty()) {
+            return Map.of();
+        }
+
+        List<Long> carIds = cars.stream()
+                .map(Car::getId)
+                .toList();
+
+        Map<Long, String> imageUrls = new LinkedHashMap<>();
+        carImageRepository.findImageRowsByCarIds(carIds)
+                .forEach(row -> {
+                    Long carId = ((Number) row[0]).longValue();
+                    String imageUrl = (String) row[1];
+                    imageUrls.putIfAbsent(carId, imageUrl);
+                });
+        return imageUrls;
     }
 }

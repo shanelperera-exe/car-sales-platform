@@ -11,9 +11,12 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -68,6 +71,9 @@ public class Car {
 
     @Column(name = "moderation_note", length = 255)
     private String moderationNote;
+
+    @OneToMany(mappedBy = "car", fetch = FetchType.LAZY)
+    private List<CarImage> images = new ArrayList<>();
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -199,6 +205,14 @@ public class Car {
         this.moderationNote = moderationNote;
     }
 
+    public List<CarImage> getImages() {
+        return images;
+    }
+
+    public void setImages(List<CarImage> images) {
+        this.images = images;
+    }
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
@@ -207,4 +221,3 @@ public class Car {
         this.createdAt = createdAt;
     }
 }
-

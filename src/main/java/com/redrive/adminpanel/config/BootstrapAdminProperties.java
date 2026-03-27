@@ -9,7 +9,7 @@ public class BootstrapAdminProperties {
 
     private boolean enabled = true;
     private String email = "admin@redrive.com";
-    private String password = "12345678";
+    private String password = "Admin1234";
     private String firstName = "System";
     private String lastName = "Admin";
 

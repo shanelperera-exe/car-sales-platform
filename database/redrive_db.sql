@@ -89,25 +89,13 @@ CREATE TABLE IF NOT EXISTS admin_logs (
 );
 
 INSERT INTO users (first_name, last_name, email, password, phone, location, role, account_status)
-SELECT 'System', 'Admin', 'admin@redrive.com', '12345678', '0770000001', 'Colombo', 'SUPER_ADMIN', 'ACTIVE'
-WHERE NOT EXISTS (
-    SELECT 1 FROM users WHERE email = 'admin@redrive.com'
-);
-
-INSERT INTO users (first_name, last_name, email, password, phone, location, role, account_status)
-SELECT 'Panel', 'Moderator', 'moderator@redrive.com', '12345678', '0770000002', 'Kandy', 'ADMIN', 'ACTIVE'
-WHERE NOT EXISTS (
-    SELECT 1 FROM users WHERE email = 'moderator@redrive.com'
-);
-
-INSERT INTO users (first_name, last_name, email, password, phone, location, role, account_status)
-SELECT 'Sahan', 'Seller', 'seller@redrive.com', '12345678', '0771234567', 'Galle', 'SELLER', 'ACTIVE'
+SELECT 'Sahan', 'Seller', 'seller@redrive.com', '$2b$12$jusubaZwQ2xj.kPUDh29EON/gfmSKiIi9nSEDOP8oBf4eBU4KUUPG', '0771234567', 'Galle', 'SELLER', 'ACTIVE'
 WHERE NOT EXISTS (
     SELECT 1 FROM users WHERE email = 'seller@redrive.com'
 );
 
 INSERT INTO users (first_name, last_name, email, password, phone, location, role, account_status)
-SELECT 'Nadee', 'Buyer', 'buyer@redrive.com', '12345678', '0777654321', 'Kurunegala', 'BUYER', 'ACTIVE'
+SELECT 'Nadee', 'Buyer', 'buyer@redrive.com', '$2b$12$u4Kdc9aPLfSg.wdEMVIOf.E4ZFUqwI9QY1xji6oSY5FlSGnSMYkOK', '0777654321', 'Kurunegala', 'BUYER', 'ACTIVE'
 WHERE NOT EXISTS (
     SELECT 1 FROM users WHERE email = 'buyer@redrive.com'
 );
@@ -191,6 +179,41 @@ SELECT
 WHERE NOT EXISTS (
     SELECT 1 FROM cars WHERE vin = 'VIN00000000000004'
 );
+
+INSERT INTO car_images (car_id, image_url, is_primary)
+SELECT (SELECT id FROM cars WHERE vin = 'VIN00000000000001'), 'https://images.unsplash.com/photo-1493238792000-8113da705763', TRUE
+WHERE NOT EXISTS (
+    SELECT 1 FROM car_images WHERE car_id = (SELECT id FROM cars WHERE vin = 'VIN00000000000001')
+);
+
+INSERT INTO car_images (car_id, image_url, is_primary)
+SELECT (SELECT id FROM cars WHERE vin = 'VIN00000000000002'), 'https://images.unsplash.com/photo-1502877338535-766e1452684a', TRUE
+WHERE NOT EXISTS (
+    SELECT 1 FROM car_images WHERE car_id = (SELECT id FROM cars WHERE vin = 'VIN00000000000002')
+);
+
+INSERT INTO car_images (car_id, image_url, is_primary)
+SELECT (SELECT id FROM cars WHERE vin = 'VIN00000000000003'), 'https://images.unsplash.com/photo-1519641471654-76ce0107ad1b', TRUE
+WHERE NOT EXISTS (
+    SELECT 1 FROM car_images WHERE car_id = (SELECT id FROM cars WHERE vin = 'VIN00000000000003')
+);
+
+INSERT INTO car_images (car_id, image_url, is_primary)
+SELECT (SELECT id FROM cars WHERE vin = 'VIN00000000000004'), 'https://images.unsplash.com/photo-1542362567-b07e54358753', TRUE
+WHERE NOT EXISTS (
+    SELECT 1 FROM car_images WHERE car_id = (SELECT id FROM cars WHERE vin = 'VIN00000000000004')
+);
+
+UPDATE car_images ci
+JOIN cars c ON c.id = ci.car_id
+SET ci.image_url = CASE c.vin
+    WHEN 'VIN00000000000001' THEN 'https://images.unsplash.com/photo-1493238792000-8113da705763?auto=format&fit=crop&w=1600&q=80'
+    WHEN 'VIN00000000000002' THEN 'https://images.unsplash.com/photo-1502877338535-766e1452684a?auto=format&fit=crop&w=1600&q=80'
+    WHEN 'VIN00000000000003' THEN 'https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?auto=format&fit=crop&w=1600&q=80'
+    WHEN 'VIN00000000000004' THEN 'https://images.unsplash.com/photo-1542362567-b07e54358753?auto=format&fit=crop&w=1600&q=80'
+    ELSE ci.image_url
+END
+WHERE ci.is_primary = TRUE;
 
 INSERT INTO transactions (order_number, car_id, buyer_id, seller_id, amount_paid, payment_method, status)
 SELECT

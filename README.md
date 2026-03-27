@@ -1,232 +1,432 @@
-# ReDrive Admin Panel Backend
+# ReDrive Admin and Moderation Panel
 
-Simple Spring Boot backend for only **Component 04: Admin & Moderation Panel** of the second-hand car sales project.
+## Project Overview
 
-This project is intentionally kept beginner-friendly:
+This project is the admin side of the ReDrive second-hand car sales platform. I built it to help platform administrators manage the marketplace from one dashboard.
 
-- Spring Boot + Maven
-- Java 21
-- MySQL
-- Simple REST API
-- No Spring Security or JWT complexity
-- Uses `X-Admin-Id` header after login to identify the admin who is performing actions
+The system allows admins to:
 
-## What Is Implemented
+- log in to the admin panel
+- see an overview of users, listings, sales, and platform activity
+- review pending car listings
+- approve or reject listings
+- view registered users
+- ban or unban users
+- manage admin accounts
+- view admin activity logs
 
-This backend covers the admin component only:
+This project is split into two parts:
 
-- Create new admin accounts
+- a Spring Boot backend for the API and business logic
+- a React frontend for the admin dashboard interface
+
+## Main Features
+
 - Admin login
-- View dashboard summary
-- View sales reports
-- View admin activity logs
-- View pending car listings
-- Approve or reject car listings
-- View users
-- Ban users
-- Unban users (super admin only)
+- Dashboard summary cards
+- Sales reporting
+- Admin activity logs
+- Listing moderation
+- User management
+- Admin account management
+- Bootstrap super admin account on first run
+- MySQL database integration
+- BCrypt password hashing
 
-## OOP Concepts Used
+## Technology Stack
 
-- **Inheritance**: `SuperAdmin` extends the admin abstraction and gets extra permissions.
-- **Abstraction**: admin permission rules are handled through the `Admin` abstraction and shared base service methods.
-- **Encapsulation**: entities and DTOs keep data structured inside classes.
-
-## Main Tech Stack
+### Backend
 
 - Java 21
 - Spring Boot 3
 - Spring Web
 - Spring Data JPA
+- Spring Validation
 - MySQL
 - Maven
+
+### Frontend
+
+- React 18
+- TypeScript
+- Vite
+- Tailwind CSS
+- React Router
+- Recharts
 
 ## Project Structure
 
 ```text
-src/main/java/com/redrive/adminpanel
-|- controller
-|- dto
-|- entity
-|- exception
-|- repository
-|- service
+car-sales-platform
+├── database
+│   ├── create_redrive_user.sql
+│   ├── redrive_db.sql
+│   ├── reset_redrive_data.sql
+│   └── seed_test_data.sql
+├── frontend
+│   ├── package.json
+│   ├── src
+│   └── vite.config.ts
+├── src
+│   ├── main
+│   │   ├── java/com/redrive/adminpanel
+│   │   └── resources
+│   └── test
+├── pom.xml
+└── README.md
 ```
 
-## Database
+## How The System Works
 
-The full MySQL script is available at:
+The backend exposes REST API endpoints under `/api/admin`.  
+The frontend calls those endpoints and shows the data in the browser.
 
-- [database/redrive_db.sql](/home/shanelperera/car-sales-platform/database/redrive_db.sql)
-- [database/create_redrive_user.sql](/home/shanelperera/car-sales-platform/database/create_redrive_user.sql)
+After an admin logs in, the frontend keeps the returned admin information and sends the selected admin ID in the `X-Admin-Id` request header for protected actions.
 
-The app also includes:
+The backend also creates a default super admin automatically on the first startup if there are no admin accounts in the database.
 
-- [schema.sql](/home/shanelperera/car-sales-platform/src/main/resources/schema.sql)
+## Database Files
 
-So when the app starts, it can create the tables automatically in `redrive_db` if MySQL credentials are correct.
-The backend also creates one default super admin account in application code on first startup.
-No sample cars, buyers, sellers, or transactions are inserted.
+The project already includes SQL files inside the `database` folder:
 
-## MySQL Configuration
+- `database/redrive_db.sql`
+  Creates the database tables and inserts some sample marketplace data.
+- `database/create_redrive_user.sql`
+  Creates the MySQL user for the project.
+- `database/reset_redrive_data.sql`
+  Clears data for a clean restart.
+- `database/seed_test_data.sql`
+  Adds extra sample data for testing.
 
-Edit [application.properties](/home/shanelperera/car-sales-platform/src/main/resources/application.properties) if needed.
+The backend also contains `src/main/resources/schema.sql`, which is used by Spring Boot during startup.
 
-Default values:
+## Default Application Configuration
+
+The main backend configuration is in `src/main/resources/application.properties`.
+
+Important defaults:
+
+```properties
+server.port=8080
+
+spring.datasource.url=jdbc:mysql://localhost:3306/redrive_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Colombo
+spring.datasource.username=redrive_user
+spring.datasource.password=Redrive@123
+
+app.bootstrap.admin.enabled=true
+app.bootstrap.admin.email=admin@redrive.com
+app.bootstrap.admin.password=Admin1234
+app.bootstrap.admin.first-name=System
+app.bootstrap.admin.last-name=Admin
+```
+
+For server deployment, I recommend setting these values through environment variables instead of editing the Java code.
+
+## Prerequisites
+
+To run this project, the server or local machine should have:
+
+- Java 21
+- Maven
+- MySQL 8 or compatible MySQL server
+- Node.js 18 or newer
+- npm
+
+For production hosting on Ubuntu, it is also best to use:
+
+- Nginx
+- `systemd`
+
+## How To Run The Project Locally
+
+### 1. Clone the project
+
+```bash
+git clone <your-repository-url>
+cd car-sales-platform
+```
+
+### 2. Create the MySQL database
+
+Start MySQL first, then run:
+
+```bash
+mysql -u root -p < database/redrive_db.sql
+mysql -u root -p < database/create_redrive_user.sql
+```
+
+If you want to use a different MySQL username or password, set the backend environment variables before running the application.
+
+### 3. Run the backend
+
+```bash
+export DB_URL="jdbc:mysql://localhost:3306/redrive_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Colombo"
+export DB_USERNAME="redrive_user"
+export DB_PASSWORD="redrive123"
+export APP_BOOTSTRAP_ADMIN_EMAIL="admin@redrive.com"
+export APP_BOOTSTRAP_ADMIN_PASSWORD="Admin1234"
+
+mvn spring-boot:run
+```
+
+The backend starts on:
+
+```text
+http://localhost:8080
+```
+
+### 4. Run the frontend
+
+Open a second terminal:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+The frontend starts on:
+
+```text
+http://localhost:5173
+```
+
+### 5. Log in
+
+If this is the first time the backend is starting on a clean database, the system creates a default super admin account:
+
+- Email: `admin@redrive.com`
+- Password: `Admin1234`
+
+## Sample Test Accounts
+
+If you load the optional seed data, these accounts are available:
+
+- Super Admin: `admin@redrive.com` / `Admin1234`
+- Admin: `moderator@redrive.com` / `Admin1234`
+- Seller: `seller@redrive.com` / `Seller1234`
+- Buyer: `buyer@redrive.com` / `Buyer1234`
+
+To add the optional sample data:
+
+```bash
+mysql -u redrive_user -p redrive_db < database/seed_test_data.sql
+```
+
+## Production Deployment Overview
+
+For a real server, the cleanest setup is:
+
+1. Run MySQL on the server.
+2. Build the Spring Boot backend into a JAR file.
+3. Run the backend as a `systemd` service on port `8080`.
+4. Build the React frontend into static files.
+5. Use Nginx to:
+   - serve the frontend files
+   - proxy `/api` requests to the backend
+
+This setup is easier for a beginner than trying to mix everything into one process.
+
+## Recommended Production Flow
+
+### Backend
+
+Build the backend:
+
+```bash
+mvn clean package -DskipTests
+```
+
+This creates a JAR file inside the `target` folder.
+
+Run it manually:
+
+```bash
+java -jar target/admin-panel-backend-0.0.1-SNAPSHOT.jar
+```
+
+For real deployment, run it through a `systemd` service instead of keeping the terminal open.
+
+### Frontend
+
+Build the frontend:
+
+```bash
+cd frontend
+npm install
+npm run build
+```
+
+This creates the production files inside:
+
+```text
+frontend/dist
+```
+
+### Nginx
+
+Nginx should:
+
+- serve `frontend/dist`
+- forward `/api` requests to `http://127.0.0.1:8080`
+- return `index.html` for unknown frontend routes such as `/dashboard` or `/users`
+
+## Local Setup Commands File
+
+I added a separate beginner-friendly text file for local setup:
+
+- `LOCAL_SETUP_COMMANDS.txt`
+
+That file contains only the basic steps needed to run the project on a local computer:
+
+- install the required software
+- clone the repository
+- create the MySQL database
+- install frontend dependencies
+- run the backend
+- run the frontend
+- log in with the default admin account
+
+## Production Environment Variables
+
+For production, I recommend setting these environment variables for the backend service:
 
 ```properties
 DB_URL=jdbc:mysql://localhost:3306/redrive_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Colombo
 DB_USERNAME=redrive_user
 DB_PASSWORD=redrive123
+APP_BOOTSTRAP_ADMIN_ENABLED=true
+APP_BOOTSTRAP_ADMIN_EMAIL=admin@redrive.com
+APP_BOOTSTRAP_ADMIN_PASSWORD=Admin1234
+APP_BOOTSTRAP_ADMIN_FIRST_NAME=System
+APP_BOOTSTRAP_ADMIN_LAST_NAME=Admin
+APP_CORS_ALLOWED_ORIGINS=https://your-domain.com
 ```
 
-You can also set them as environment variables before running the app.
+If the frontend and backend are served from the same domain through Nginx, browser CORS problems are usually avoided because the browser only talks to the Nginx domain.
 
-## Create The Project MySQL User
+## Important Notes For Deployment
 
-Run these SQL files in MySQL using a privileged account like `root`:
+### 1. Database password consistency
 
-1. [database/redrive_db.sql](/home/shanelperera/car-sales-platform/database/redrive_db.sql)
-2. [database/create_redrive_user.sql](/home/shanelperera/car-sales-platform/database/create_redrive_user.sql)
+The provided SQL file `database/create_redrive_user.sql` creates:
 
-Or run this directly:
+- username: `redrive_user`
+- password: `redrive123`
 
-```sql
-CREATE DATABASE IF NOT EXISTS redrive_db;
-CREATE USER IF NOT EXISTS 'redrive_user'@'localhost' IDENTIFIED BY 'redrive123';
-GRANT ALL PRIVILEGES ON redrive_db.* TO 'redrive_user'@'localhost';
-FLUSH PRIVILEGES;
-```
+So if that SQL file is used, the backend environment variables should use the same password.
 
-Then start the app normally:
+### 2. Bootstrap admin behavior
+
+The default super admin is only created when there are no admin accounts in the database.
+
+### 3. Sample images
+
+Some sample listing images are loaded from external URLs.  
+That means the server may need outbound internet access if those sample records are being used.
+
+### 4. React route handling
+
+Because this frontend uses React Router, Nginx must be configured to return `index.html` for non-file routes.
+
+## Useful Commands
+
+### Reset the database data
 
 ```bash
-mvn spring-boot:run
+mysql -u redrive_user -p redrive_db < database/reset_redrive_data.sql
 ```
 
-If you want to use a different username or password, set them before starting the app:
+### Load sample data
 
 ```bash
-export DB_USERNAME=your_mysql_username
-export DB_PASSWORD=your_mysql_password
-mvn spring-boot:run
+mysql -u redrive_user -p redrive_db < database/seed_test_data.sql
 ```
 
-## How To Run
-
-1. Make sure MySQL is running.
-2. Create the database manually using [database/redrive_db.sql](/home/shanelperera/car-sales-platform/database/redrive_db.sql), or let Spring create it automatically.
-3. Run the application:
+### Run backend tests
 
 ```bash
-mvn spring-boot:run
+mvn test
 ```
 
-If Maven is not installed on the machine yet, install Maven first and then run the command above.
-
-## Important API Usage
-
-The backend creates the initial super admin account automatically on first startup.
-
-Default bootstrap admin:
-
-- email: `admin@redrive.com`
-- password: `12345678`
-
-You can override those values with environment variables before starting the app:
+### Build frontend
 
 ```bash
-export APP_BOOTSTRAP_ADMIN_EMAIL=your-admin@example.com
-export APP_BOOTSTRAP_ADMIN_PASSWORD=your-secure-password
+cd frontend
+npm run build
 ```
 
-Then login using:
+## API Summary
 
-`POST /api/admin/auth/login`
+Main backend routes:
 
-Example request:
-
-```json
-{
-  "email": "admin@redrive.com",
-  "password": "12345678"
-}
-```
-
-The response returns the admin `id`.
-
-Use that value in the request header for all other admin actions:
-
-```text
-X-Admin-Id: 1
-```
-
-## Main Endpoints
-
-### Auth
+### Authentication
 
 - `POST /api/admin/auth/login`
 
-### Admin Accounts
-
-- `POST /api/admin/accounts`
-- `GET /api/admin/accounts`
-
-### Dashboard, Logs, Reports
+### Dashboard and Reports
 
 - `GET /api/admin/dashboard/summary`
 - `GET /api/admin/reports/sales`
 - `GET /api/admin/logs`
 
-### Listing Moderation
+### Listings
 
 - `GET /api/admin/listings`
 - `GET /api/admin/listings/pending`
+- `GET /api/admin/listings/{carId}/image`
 - `PUT /api/admin/listings/{carId}/approve`
 - `PUT /api/admin/listings/{carId}/reject`
 
-### User Management
+### Users
 
 - `GET /api/admin/users`
 - `GET /api/admin/users/{userId}`
 - `PUT /api/admin/users/{userId}/ban`
 - `PUT /api/admin/users/{userId}/unban`
 
-## Example Requests
+### Admin Accounts
 
-Approve a car listing:
+- `POST /api/admin/accounts`
+- `GET /api/admin/accounts`
+- `PUT /api/admin/accounts/me`
 
-```bash
-curl -X PUT http://localhost:8080/api/admin/listings/1/approve \
-  -H "Content-Type: application/json" \
-  -H "X-Admin-Id: 1" \
-  -d '{"moderationNote":"Listing verified and approved."}'
+## Troubleshooting
+
+### Backend cannot connect to MySQL
+
+Check:
+
+- MySQL service is running
+- database name is correct
+- username and password are correct
+- environment variables match the real MySQL credentials
+
+### Frontend loads but API does not work
+
+Check:
+
+- backend is running on port `8080`
+- Nginx proxy for `/api` is configured correctly
+- backend service is active
+
+### React page shows 404 after refresh
+
+Check the Nginx config and make sure it uses:
+
+```nginx
+try_files $uri $uri/ /index.html;
 ```
 
-Reject a listing:
+### Admin account is not created
 
-```bash
-curl -X PUT http://localhost:8080/api/admin/listings/1/reject \
-  -H "Content-Type: application/json" \
-  -H "X-Admin-Id: 1" \
-  -d '{"moderationNote":"Please correct the missing details and resubmit."}'
-```
+Check:
 
-Ban a user:
+- the database is empty for admin users
+- `APP_BOOTSTRAP_ADMIN_ENABLED=true`
+- the backend started successfully without database errors
 
-```bash
-curl -X PUT http://localhost:8080/api/admin/users/3/ban \
-  -H "Content-Type: application/json" \
-  -H "X-Admin-Id: 1" \
-  -d '{"reason":"Repeated spam activity"}'
-```
+## Final Note
 
-## Notes
-
-- Passwords are stored as plain text only to keep the project simple for a student demo.
-- This is okay for an academic project, but not for a real production system.
-- The backend creates the initial super admin account on startup when no admin account exists.
-- The schema is based on the client-provided SQL, with small additions needed to support admin moderation properly:
-  - `users.account_status`
-  - `cars.moderation_note`
-  - `cars.status` supports `REJECTED`
+This project is designed to be simple to understand and easy to demonstrate.  
+The backend and frontend are clearly separated, the admin functionality is organized by feature, and the project can be run both locally and on a real Ubuntu server with MySQL and Nginx.

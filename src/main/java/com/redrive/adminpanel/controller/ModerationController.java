@@ -7,8 +7,11 @@ import com.redrive.adminpanel.dto.UserManagementResponse;
 import com.redrive.adminpanel.entity.enums.CarStatus;
 import com.redrive.adminpanel.entity.enums.Role;
 import com.redrive.adminpanel.entity.enums.UserStatus;
+import com.redrive.adminpanel.service.ListingImageProxyService;
 import com.redrive.adminpanel.service.ModerationService;
 import jakarta.validation.Valid;
+import org.springframework.http.CacheControl;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,9 +29,12 @@ import java.util.List;
 public class ModerationController {
 
     private final ModerationService moderationService;
+    private final ListingImageProxyService listingImageProxyService;
 
-    public ModerationController(ModerationService moderationService) {
+    public ModerationController(ModerationService moderationService,
+                                ListingImageProxyService listingImageProxyService) {
         this.moderationService = moderationService;
+        this.listingImageProxyService = listingImageProxyService;
     }
 
     @GetMapping("/listings/pending")
@@ -40,6 +46,17 @@ public class ModerationController {
     public ResponseEntity<List<CarListingResponse>> getListings(@RequestHeader("X-Admin-Id") Long adminId,
                                                                 @RequestParam(required = false) CarStatus status) {
         return ResponseEntity.ok(moderationService.getListings(adminId, status));
+    }
+
+    @GetMapping("/listings/{carId}/image")
+    public ResponseEntity<byte[]> getListingImage(@PathVariable Long carId) {
+        ListingImageProxyService.ImagePayload imagePayload = listingImageProxyService.loadListingImage(carId);
+
+        MediaType mediaType = MediaType.parseMediaType(imagePayload.contentType());
+        return ResponseEntity.ok()
+                .contentType(mediaType)
+                .cacheControl(CacheControl.noCache())
+                .body(imagePayload.bytes());
     }
 
     @PutMapping("/listings/{carId}/approve")
@@ -82,4 +99,3 @@ public class ModerationController {
         return ResponseEntity.ok(moderationService.unbanUser(adminId, userId));
     }
 }
-

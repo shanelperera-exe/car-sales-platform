@@ -15,9 +15,9 @@ public record CarListingResponse(
         String fuelType,
         BigDecimal price,
         String location,
+        String imageUrl,
         String status,
         String moderationNote,
         LocalDateTime createdAt
 ) {
 }
-
